@@ -10,13 +10,13 @@ const client = new Client({
     }
   });
 
-const allowedGenres = [
-    "Soul", "Funk", "Jazz", "Blues", "RnB", "HipHop", "Rap", "Pop", "Rock", "Punk",
-    "Indie", "MPB", "Samba", "BossaNova", "Reggae", "Ska", "Trap", "Eletronica",
-    "House", "Techno", "Lofi", "Psychedelic", "Experimental", "Instrumental", "Classica",
-    "Metal", "Forro", "Sertanejo", "Pagode", "Drill", "Afrobeat", "Grime", "Kpop", "Jpop",
-    "Vaporwave", "Chillwave", "Ambient", "NewAge"
-];
+// const allowedGenres = [
+//     "Soul", "Funk", "Jazz", "Blues", "RnB", "HipHop", "Rap", "Pop", "Rock", "Punk",
+//     "Indie", "MPB", "Samba", "BossaNova", "Reggae", "Ska", "Trap", "Eletronica",
+//     "House", "Techno", "Lofi", "Psychedelic", "Experimental", "Instrumental", "Classica",
+//     "Metal", "Forro", "Sertanejo", "Pagode", "Drill", "Afrobeat", "Grime", "Kpop", "Jpop",
+//     "Vaporwave", "Chillwave", "Ambient", "NewAge"
+// ];
 
 const usuariosPermitidos = [
     "120363158758153954@g.us" //xiolas
@@ -48,6 +48,7 @@ client.on('qr', async (qr) => {
 
 client.on('authenticated', () => {
     console.log('✅ AUTHENTICATED');
+
 });
 
 client.on('auth_failure', msg => {
@@ -63,15 +64,6 @@ client.on('ready', async () => {
 
 client.on('ready', async () => {
     console.log("✅ Conectado!");
-    
-    const chats = await client.getChats();
-
-    const groups = chats.filter(chat => chat.isGroup);
-
-    groups.forEach(group => {
-        console.log(`📛 Nome do grupo: ${group.name}`);
-        console.log(`🆔 ID do grupo: ${group.id._serialized}\n`);
-    });
 });
 
 
@@ -113,9 +105,9 @@ client.on('message_create', async (message) => {
             const matchGenero = text.match(regexGenero);
             const genreFromMessage = matchGenero[1];
         
-            if (!allowedGenres.includes(genreFromMessage)) {
-                return message.reply("Estilo inválido.");
-            }
+            // if (!allowedGenres.includes(genreFromMessage)) {
+            //     return message.reply("Estilo inválido.");
+            // }
         
             const linkFromMessage = text.match(regexLink)?.[0];
             
@@ -138,13 +130,15 @@ client.on('message_create', async (message) => {
         if (text.startsWith("!add")) {
             const rawGenre = text.replace("!add", " ").trim();
             const genre = rawGenre.charAt(0).toUpperCase() + rawGenre.slice(1).toLowerCase();
+            const groupId = message.from.replace("@g.us", " ").trim();
             console.log(`Original Text: ${rawGenre} -|- Text Char 0: ${rawGenre.charAt(0).toUpperCase()} -|- Text Sliced ${rawGenre.slice(1).toLowerCase()} -|- Final text: ${genre}`)
-            if (!allowedGenres.includes(genre)) {
-                return message.reply("Inválido.");
-            }
+
+            // if (!allowedGenres.includes(genre)) {
+            //     message.reply("Inválido.");
+            // }
 
             console.log(`Adicionando usuário ${senderId} ao estilo ${genre}`);
-            await db.addUsuario('GenresAndPeople', senderId, genre);
+            await db.addUsuario('GenresAndPeople', senderId, genre, groupId);
             message.reply(`Você foi adicionado à lista de ${genre}!`);
         }
 
@@ -162,12 +156,14 @@ client.on('message_create', async (message) => {
         // @@genero
         if (text.startsWith("@@")) {
             const genre = text.replace("@@", "").trim();
-            if (!allowedGenres.includes(genre)) {
-                return message.reply("Estilo inválido.");
-            }
+            const groupId = message.from.replace("@g.us", " ").trim();
+            console.log(groupId)
+            // if (!allowedGenres.includes(genre)) {
+            //     return message.reply("Estilo inválido.");
+            // }
 
             const chat = await message.getChat();
-            const { usuarios, usuariosComC } = await db.marcarPessoas('GenresAndPeople', genre);
+            const { usuarios, usuariosComC } = await db.marcarPessoas('GenresAndPeople', genre, groupId);
 
             if (usuarios.length === 0) {
                 return message.reply(`Ninguém ouve ${genre} ainda.`);

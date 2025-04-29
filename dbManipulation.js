@@ -41,50 +41,55 @@ function createTable(tabela) {
     });
 }
 
-function addUsuario(nomeTabela, idUsuario, genero) {
+function addUsuario(nomeTabela, idUsuario, genero, groupId) {
     return new Promise((resolve, reject) => {
-        // Verifique se o usuário já existe na tabela
-        const stmt = db.prepare(`SELECT 1 FROM ${nomeTabela} WHERE idUsuario = ?`);
-        stmt.get(idUsuario, (err, row) => {
-            if (err) return reject(err);
+        if (!allowedGenres.includes(genero)) {
+            const alterQuery = `ALTER TABLE ${nomeTabela} ADD COLUMN ${genero} VARCHAR(20)`;
+            const updateGenreQuery = `UPDATE ${nomeTabela} SET ${genero} = ? WHERE idUsuario = ?`;
+            const updateGroupQuery = `UPDATE ${nomeTabela} SET grupo = ? WHERE idUsuario = ?`;
 
-            // Se a coluna de gênero não existe, adicione-a
-            if (!row) {
-                // Se o usuário não existe, insira na tabela
-                const insertStmt = db.prepare(`INSERT INTO ${nomeTabela}(idUsuario) VALUES (?)`);
-                insertStmt.run(idUsuario, (insertErr) => {
-                    if (insertErr) return reject(insertErr);
+            db.run(alterQuery, [], (err) => {
+                if (err) return reject(err);
+
+                db.run(updateGenreQuery, ['1', idUsuario], (err) => {
+                    if (err) return reject(err);
+
+                    db.run(updateGroupQuery, [groupId, idUsuario], (err) => {
+                        if (err) return reject(err);
+
+                        allowedGenres.push(genero);
+                        resolve("O estilo foi adicionado e você será marcado!");
+                    });
                 });
-            }
+            });
+        } else {
+            const updateGenreQuery = `UPDATE ${nomeTabela} SET ${genero} = ? WHERE idUsuario = ?`;
+            const updateGroupQuery = `UPDATE ${nomeTabela} SET grupo = ? WHERE idUsuario = ?`;
 
-            // // Verifique se o gênero está nos gêneros permitidos
-            // if (allowedGenres.includes(genero)) {
-            //     // Adicionar a coluna de gênero se não existir
-            //     const alterTableStmt = db.prepare(`ALTER TABLE ${nomeTabela} ADD ${genero} TEXT`);
-            //     alterTableStmt.run((alterErr) => {
-            //         if (alterErr && alterErr.code !== 'SQLITE_ERROR') return reject(alterErr); // Verifica se não é um erro relacionado à tentativa de adicionar uma coluna já existente
-            //     });
+            db.run(updateGenreQuery, ['1', idUsuario], (err) => {
+                if (err) return reject(err);
 
-            //     // Se o gênero for válido, adicione ou atualize o valor correspondente ao usuário
-            //     const updateStmt = db.prepare(`UPDATE ${nomeTabela} SET ${genero} = ? WHERE idUsuario = ?`);
-            //     updateStmt.run("1", idUsuario, (updateErr) => {
-            //         if (updateErr) return reject(updateErr);
-            //         resolve();
-            //     });
-            // } else {
-            //     reject(new Error("Este gênero musical não existe!"));
-            // }
-        });
+                db.run(updateGroupQuery, [groupId, idUsuario], (err) => {
+                    if (err) return reject(err);
+
+                    resolve(`Agora você será marcado em ${genero}`);
+                });
+            });
+        }
     });
 }
 
+
 function marcarPessoas(nomeTabela, genero, groupID) {
     return new Promise((resolve, reject) => {
-        const stmt = db.prepare(`SELECT idUsuario FROM ${nomeTabela} WHERE ${genero} = ?`);
-        stmt.all('1', (err, rows) => {
-            if(err) { return reject(err); }
-            
-            if()
+
+        if (!allowedGenres.includes(genero)) {
+            return reject(new Error('Inválido.'));
+        }
+
+        const queryMarcacao = db.prepare(`SELECT idUsuario FROM ${nomeTabela} WHERE ${genero} = ? AND grupo = ?`);
+        queryMarcacao.all(['1', groupID], (err, rows) => {
+            if (err) return reject(err);
 
             const usuarios = rows.map(row => row.idUsuario.trim());
             const usuariosComC = usuarios.map(id => `${id}@c.us`);
@@ -117,7 +122,7 @@ function consultaTabela(nomeTabela) {
             if (err) return reject(err);
             const generos = rows
                 .map(row => row.name)
-                .filter(name => name !== 'idUsuario');
+                .filter(name => name !== 'idUsuario', name => name !== 'grupo');
             resolve(generos);
         });
     });
