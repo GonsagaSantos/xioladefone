@@ -5,9 +5,10 @@ const db = require('./dbManipulation.js');
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
-      headless: false,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    }
+        headless: true,
+        executablePath: '/usr/bin/google-chrome',
+        args: ['--disable-gpu', '--no-sandbox']
+      }
   });
 
 const usuariosPermitidos = [
