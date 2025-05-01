@@ -1,25 +1,21 @@
 FROM node:20
 
-# Instala bibliotecas do sistema necessárias pro Chromium rodar
+
+# Instalar dependências do Chromium
 RUN apt-get update && apt-get install -y \
-  wget \
-  ca-certificates \
-  fonts-liberation \
-  libappindicator3-1 \
-  libasound2 \
-  libatk-bridge2.0-0 \
-  libatk1.0-0 \
-  libcups2 \
-  libdbus-1-3 \
-  libgdk-pixbuf2.0-0 \
-  libnspr4 \
-  libnss3 \
+  libdrm2 \
   libx11-xcb1 \
   libxcomposite1 \
   libxdamage1 \
   libxrandr2 \
-  libxss1 \
-  libxtst6 \
+  libatk1.0-0 \
+  libatk-bridge2.0-0 \
+  libcups2 \
+  libnss3 \
+  libgbm1 \
+  libasound2 \
+  libappindicator3-1 \
+  fonts-liberation \
   xdg-utils \
   --no-install-recommends && \
   apt-get clean && \
