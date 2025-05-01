@@ -7,16 +7,13 @@ const db = new sqlite3.Database('./db/musicbot.db', (err) => {
     console.log("Tudo certo!!");
 });
 
-const allowedGenres = [
-    "Soul", "Funk", "Jazz", "Blues", "RnB",
-    "HipHop", "Rap", "Pop", "Rock", "Punk",
-    "Indie", "MPB", "Samba", "BossaNova", "Reggae",
-    "Ska", "Trap", "Eletronica", "House", "Techno",
-    "Lofi", "Psychedelic", "Experimental", "Instrumental", "Classica",
-    "Metal", "Forro", "Sertanejo", "Pagode", "Drill",
-    "Afrobeat", "Grime", "Kpop", "Jpop", "Vaporwave",
-    "Chillwave", "Ambient", "NewAge"
-]; //p evitar SQL Injection
+const allowedGenres =  db.prepare(`select name from pragma_table_info('GenresAndPeople') WHERE name <> 'idUsuario' AND name <> 'grupo'`);
+allowedGenres.all( (err, cols) => {
+    if (err) return reject(err);
+
+    const genres = cols.map(col => col.name.trim());
+    console.log(genres)
+});
 
 function createTable(tabela) {
     db.run(`
@@ -41,15 +38,38 @@ function createTable(tabela) {
     });
 }
 
+console.log(allowedGenres)
+
 function addUsuario(nomeTabela, idUsuario, genero, groupId) {
     return new Promise((resolve, reject) => {
-        if (!allowedGenres.includes(genero)) {
-            const alterQuery = `ALTER TABLE ${nomeTabela} ADD COLUMN ${genero} VARCHAR(20)`;
-            const updateGenreQuery = `UPDATE ${nomeTabela} SET ${genero} = ? WHERE idUsuario = ?`;
-            const updateGroupQuery = `UPDATE ${nomeTabela} SET grupo = ? WHERE idUsuario = ?`;
+        const allowedGenres =  db.prepare(`select name from pragma_table_info('GenresAndPeople') WHERE name <> 'idUsuario' AND name <> 'grupo'`);
+        allowedGenres.all( (err, cols) => {
+            if (err) return reject(err);
 
-            db.run(alterQuery, [], (err) => {
-                if (err) return reject(err);
+            const genres = cols.map(col => col.name.trim());
+            console.log(genres)
+        
+            if (!genres.includes(genero)) {
+                const alterQuery = `ALTER TABLE ${nomeTabela} ADD COLUMN ${genero} VARCHAR(20)`;
+                const updateGenreQuery = `UPDATE ${nomeTabela} SET ${genero} = ? WHERE idUsuario = ?`;
+                const updateGroupQuery = `UPDATE ${nomeTabela} SET grupo = ? WHERE idUsuario = ?`;
+
+                db.run(alterQuery, [], (err) => {
+                    if (err) return reject(err);
+
+                    db.run(updateGenreQuery, ['1', idUsuario], (err) => {
+                        if (err) return reject(err);
+
+                        db.run(updateGroupQuery, [groupId, idUsuario], (err) => {
+                            if (err) return reject(err);
+
+                            resolve("O estilo foi adicionado e você será marcado!");
+                        });
+                    });
+                });
+            } else {
+                const updateGenreQuery = `UPDATE ${nomeTabela} SET ${genero} = ? WHERE idUsuario = ?`;
+                const updateGroupQuery = `UPDATE ${nomeTabela} SET grupo = ? WHERE idUsuario = ?`;
 
                 db.run(updateGenreQuery, ['1', idUsuario], (err) => {
                     if (err) return reject(err);
@@ -57,35 +77,30 @@ function addUsuario(nomeTabela, idUsuario, genero, groupId) {
                     db.run(updateGroupQuery, [groupId, idUsuario], (err) => {
                         if (err) return reject(err);
 
-                        allowedGenres.push(genero);
-                        resolve("O estilo foi adicionado e você será marcado!");
+                        resolve(`Agora você será marcado em ${genero}`);
                     });
                 });
-            });
-        } else {
-            const updateGenreQuery = `UPDATE ${nomeTabela} SET ${genero} = ? WHERE idUsuario = ?`;
-            const updateGroupQuery = `UPDATE ${nomeTabela} SET grupo = ? WHERE idUsuario = ?`;
+            }
 
-            db.run(updateGenreQuery, ['1', idUsuario], (err) => {
-                if (err) return reject(err);
-
-                db.run(updateGroupQuery, [groupId, idUsuario], (err) => {
-                    if (err) return reject(err);
-
-                    resolve(`Agora você será marcado em ${genero}`);
-                });
-            });
-        }
+        });  
     });
 }
 
 
 function marcarPessoas(nomeTabela, genero, groupID) {
     return new Promise((resolve, reject) => {
+        const queryGenres =  db.prepare(`select name from pragma_table_info('${nomeTabela}') WHERE name <> 'idUsuario' AND name <> 'grupo'`);
+        queryGenres.all( (err, cols) => {
+            if (err) return reject(err);
 
-        if (!allowedGenres.includes(genero)) {
-            return reject(new Error('Inválido.'));
-        }
+            const genres = cols.map(col => col.name.trim());
+            console.log(genres)
+
+                if (!genres.includes(genero)) {
+                    return reject(new Error('Inválido.'));
+                }
+        })
+
 
         const queryMarcacao = db.prepare(`SELECT idUsuario FROM ${nomeTabela} WHERE ${genero} = ? AND grupo = ?`);
         queryMarcacao.all(['1', groupID], (err, rows) => {
@@ -122,7 +137,8 @@ function consultaTabela(nomeTabela) {
             if (err) return reject(err);
             const generos = rows
                 .map(row => row.name)
-                .filter(name => name !== 'idUsuario', name => name !== 'grupo');
+                .filter(name => name !== 'idUsuario')
+                .filter(name => name !== 'grupo') //nao marcar a coluna 'grupo' no consulta tags
             resolve(generos);
         });
     });

@@ -10,14 +10,6 @@ const client = new Client({
     }
   });
 
-// const allowedGenres = [
-//     "Soul", "Funk", "Jazz", "Blues", "RnB", "HipHop", "Rap", "Pop", "Rock", "Punk",
-//     "Indie", "MPB", "Samba", "BossaNova", "Reggae", "Ska", "Trap", "Eletronica",
-//     "House", "Techno", "Lofi", "Psychedelic", "Experimental", "Instrumental", "Classica",
-//     "Metal", "Forro", "Sertanejo", "Pagode", "Drill", "Afrobeat", "Grime", "Kpop", "Jpop",
-//     "Vaporwave", "Chillwave", "Ambient", "NewAge"
-// ];
-
 const usuariosPermitidos = [
     "120363158758153954@g.us" //xiolas
     //"120363223636042606@g.us" lombrados
@@ -75,11 +67,11 @@ client.on('message_create', async (message) => {
     // Check if the message is from the authorized group (replace with your group ID)
     const xiolas = "120363158758153954@g.us";
     const grupoTeste = "120363418368861974@g.us";
-    const gruposAutorizados = [xiolas, grupoTeste];
+    const grupoFatec = "120363223636042606@g.us";
+    const gruposAutorizados = [xiolas, grupoTeste, grupoFatec];
 
     if (!gruposAutorizados.includes(message.from)) {
         console.log("O grupo/usuário tentando usar o bot não é autorizado.");
-        //await message.reply("Não autorizado.");
         return;
     }
 
@@ -105,7 +97,7 @@ client.on('message_create', async (message) => {
             const matchGenero = text.match(regexGenero);
             const genreFromMessage = matchGenero[1];
         
-            // if (!allowedGenres.includes(genreFromMessage)) {
+            // if (!db.consultaTabela('GenresAndPeople').includes(genreFromMessage)) {
             //     return message.reply("Estilo inválido.");
             // }
         
@@ -133,10 +125,6 @@ client.on('message_create', async (message) => {
             const groupId = message.from.replace("@g.us", " ").trim();
             console.log(`Original Text: ${rawGenre} -|- Text Char 0: ${rawGenre.charAt(0).toUpperCase()} -|- Text Sliced ${rawGenre.slice(1).toLowerCase()} -|- Final text: ${genre}`)
 
-            // if (!allowedGenres.includes(genre)) {
-            //     message.reply("Inválido.");
-            // }
-
             console.log(`Adicionando usuário ${senderId} ao estilo ${genre}`);
             await db.addUsuario('GenresAndPeople', senderId, genre, groupId);
             message.reply(`Você foi adicionado à lista de ${genre}!`);
@@ -145,9 +133,9 @@ client.on('message_create', async (message) => {
         // !remove genero
         if (text.startsWith("!remove")) {
             const genre = text.replace("!remove", "").trim();
-            if (!allowedGenres.includes(genre)) {
-                return message.reply("Inválido.");
-            }
+            // if (!db.consultaTabela('GenresAndPeople').includes(genre)) {
+            //     return message.reply("Estilo inválido.");
+            // }
 
             const resposta = await db.removerPessoas('GenresAndPeople', senderId, genre);
             return message.reply(resposta);
@@ -158,9 +146,6 @@ client.on('message_create', async (message) => {
             const genre = text.replace("@@", "").trim();
             const groupId = message.from.replace("@g.us", " ").trim();
             console.log(groupId)
-            // if (!allowedGenres.includes(genre)) {
-            //     return message.reply("Estilo inválido.");
-            // }
 
             const chat = await message.getChat();
             const { usuarios, usuariosComC } = await db.marcarPessoas('GenresAndPeople', genre, groupId);
@@ -200,10 +185,36 @@ client.on('message_create', async (message) => {
                 message.reply("Erro ao listar seus estilos.");
             })
         }
+        
+        //ajuda com os comandos
+        if (text.startsWith("!ajuda")) {
+            message.reply(
+                `🎧 *Xiolers de Fone - Comandos Disponíveis* 🎧
+
+📌 *!add <gênero>*  
+Te cadastra em um gênero musical. Você será marcade sempre que alguém marcar esse gênero.
+Exemplo: !add Jazz
+
+📌 *!remove <gênero>*  
+Re remove das marcações do gênero indicado.
+Exemplo: !remove Jazz
+
+📌 *@@<gênero>*  
+Marca todos os usuários cadastrados no gênero.
+Exemplo: @@Jazz
+
+📌 *!ConsultaTags*  
+Lista todos os gêneros musicais disponíveis.
+
+📌 *!minhasmarcacoes*  
+Mostra todos os gêneros nos quais você está cadastrado.`
+            );
+        }
+        
 
     } catch (err) {
         console.error("Erro ao processar mensagem:", err);
-        message.reply("Ocorreu um erro ao processar sua mensagem.");
+        message.reply("deu erro kkkkkkkkkkkkkk perai");
     }
 });
 
