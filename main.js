@@ -1,12 +1,13 @@
 const { Client, LocalAuth, GroupNotificationTypes } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const db = require('./dbManipulation.js');
+const similarity = require("string-similarity");
 
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
-        headless: true,
-        executablePath: '/usr/bin/google-chrome',
+        headless: false,
+        //executablePath: '/usr/bin/google-chrome',
         args: ['--disable-gpu', '--no-sandbox']
       }
   });
@@ -33,7 +34,7 @@ client.on('qr', async (qr) => {
     // paiuting code example
     const pairingCodeEnabled = false;
     if (pairingCodeEnabled && !pairingCodeRequested) {
-        const pairingCode = await client.requestPairingCode('5511910618287'); // enter the target phone number
+        const pairingCode = await client.requestPairingCode('5511910618287');
         console.log('Pairing code enabled, code: '+ pairingCode);
         pairingCodeRequested = true;
     }
@@ -56,20 +57,42 @@ client.on('ready', async () => {
 // ======================== Manipulador Geral de Mensagens =====================
 
 client.on('ready', async () => {
+    const currentTime = new Date().toLocaleString("pt-BR");
+
+    const chats = await client.getChats();
+    const groups = chats.filter(chat => chat.isGroup);
+
     console.log("✅ Conectado!");
+
+    await client.sendMessage("120363418368861974@g.us", `Bot conectado em ${currentTime}`);
+    // groups.forEach(group => {
+    //     console.log(`Nome: ${group.name} | ID: ${group.id._serialized}`);
+    // });
 });
 
+const comandosValidos = ['!add', '!remove', '!consultatags', '!ConsultaTags', '!minhasmarcacoes', '!consultapessoas', '@@', '!ajuda'];
+
+function verificarComando(msg) { //pra caso a pessoa erre o comando
+    const palavra = msg.split(" ")[0]; // pega só o primeiro termo
+    const sugestao = similarity.findBestMatch(palavra, comandosValidos);
+
+    if (sugestao.bestMatch.rating > 0.6 && palavra !== sugestao.bestMatch.target) {
+        return `Você quis dizer: *${sugestao.bestMatch.target}*?`;
+    }
+    return null;
+}
 
 client.on('message_create', async (message) => {
 
-    // Ignore messages sent by the bot itself
-    if (message.fromMe) return;
+    if (message.fromMe) return; //se a mensagem for do proprio bot ele ignora
 
-    // Check if the message is from the authorized group (replace with your group ID)
+    const mensagem = typeof message.body === 'string' ? message.body.toLowerCase() : '';
+    
     const xiolas = "120363158758153954@g.us";
     const grupoTeste = "120363418368861974@g.us";
     const grupoFatec = "120363223636042606@g.us";
-    const gruposAutorizados = [xiolas, grupoTeste, grupoFatec];
+    const grupoLogs = "120363418165585515@g.us";
+    const gruposAutorizados = [xiolas, grupoTeste, grupoFatec, grupoLogs];
 
     if (!gruposAutorizados.includes(message.from)) {
         console.log("O grupo/usuário tentando usar o bot não é autorizado.");
@@ -83,7 +106,7 @@ client.on('message_create', async (message) => {
         const senderId = (String(message.author || message.from).replace("@c.us", "")).trim();
 
         // !Ping
-        if (text === "!Ping") {
+        if (mensagem === "!ping") {
             return message.reply("Pong!");
         }
 
@@ -94,15 +117,15 @@ client.on('message_create', async (message) => {
         const genre = message.body.match(regexGenero)?.[1];
         
         // Verifica se tem @@genero em qualquer parte da mensagem
-        if (regexGenero.test(text)) {
-            const matchGenero = text.match(regexGenero);
+        if (regexGenero.test(mensagem)) {
+            const matchGenero = mensagem.match(regexGenero);
             const genreFromMessage = matchGenero[1];
         
             // if (!db.consultaTabela('GenresAndPeople').includes(genreFromMessage)) {
             //     return message.reply("Estilo inválido.");
             // }
         
-            const linkFromMessage = text.match(regexLink)?.[0];
+            const linkFromMessage = mensagem.match(regexLink)?.[0];
             
             if (linkFromMessage) {
                 const chat = await message.getChat();
@@ -120,11 +143,10 @@ client.on('message_create', async (message) => {
         }
         
         // !add genero
-        if (text.startsWith("!add")) {
-            const rawGenre = text.replace("!add", " ").trim();
-            const genre = rawGenre.charAt(0).toUpperCase() + rawGenre.slice(1).toLowerCase();
+        if (mensagem.startsWith("!add")) {
+            const genre = mensagem.replace("!add", " ").trim();
+            // const genre = rawGenre.charAt(0).toUpperCase() + rawGenre.slice(1).toLowerCase();
             const groupId = message.from.replace("@g.us", " ").trim();
-            console.log(`Original Text: ${rawGenre} -|- Text Char 0: ${rawGenre.charAt(0).toUpperCase()} -|- Text Sliced ${rawGenre.slice(1).toLowerCase()} -|- Final text: ${genre}`)
 
             console.log(`Adicionando usuário ${senderId} ao estilo ${genre}`);
             await db.addUsuario('GenresAndPeople', senderId, genre, groupId);
@@ -132,8 +154,8 @@ client.on('message_create', async (message) => {
         }
 
         // !remove genero
-        if (text.startsWith("!remove")) {
-            const genre = text.replace("!remove", "").trim();
+        if (mensagem.startsWith("!remove")) {
+            const genre = text.replace("!remove", " ").trim();
             // if (!db.consultaTabela('GenresAndPeople').includes(genre)) {
             //     return message.reply("Estilo inválido.");
             // }
@@ -143,10 +165,9 @@ client.on('message_create', async (message) => {
         }
 
         // @@genero
-        if (text.startsWith("@@")) {
-            const genre = text.replace("@@", "").trim();
+        if (mensagem.startsWith("@@")) {
+            const genre = mensagem.replace("@@", " ").trim();
             const groupId = message.from.replace("@g.us", " ").trim();
-            console.log(groupId)
 
             const chat = await message.getChat();
             const { usuarios, usuariosComC } = await db.marcarPessoas('GenresAndPeople', genre, groupId);
@@ -161,8 +182,23 @@ client.on('message_create', async (message) => {
             });
         }
 
+        // !consultaPessoas
+        // if (mensagem.startsWith("!consultapessoas")) {
+        //     const genre = mensagem.replace("!consultapessoas", " ").trim();
+        //     const groupId = message.from.replace("@g.us", " ").trim();
+
+        //     const chat = await message.getChat();
+        //     const usuarios = await db.marcarPessoas('GenresAndPeople', genre, groupId);
+
+        //     if (usuarios.length === 0) {
+        //         return message.reply(`Ninguém ouve ${genre} ainda.`);
+        //     }
+
+        //     return chat.sendMessage(`${genre}:\n ${usuarios}`);
+        // }                                                                                        implementar depois
+
         // !consultaTags
-        if(text.startsWith("!ConsultaTags")){
+        if(mensagem.startsWith("!consultatags")){
             db.consultaTabela("GenresAndPeople")
             .then((generos) => {
               const lista = generos.join(", ");
@@ -175,7 +211,7 @@ client.on('message_create', async (message) => {
         }
 
         //minhas marcacoes
-        if(text.startsWith("!minhasmarcacoes")){
+        if(mensagem.startsWith("!minhasmarcacoes")){
             db.consultarGenerosMarcados("GenresAndPeople", senderId)
             .then((generos) => {
                 const lista = generos.join('\n');
@@ -188,7 +224,7 @@ client.on('message_create', async (message) => {
         }
         
         //ajuda com os comandos
-        if (text.startsWith("!ajuda")) {
+        if (mensagem.startsWith("!ajuda")) {
             message.reply(
                 `🎧 *Xiolers de Fone - Comandos Disponíveis* 🎧
 
@@ -210,13 +246,20 @@ Lista todos os gêneros musicais disponíveis.
 📌 *!minhasmarcacoes*  
 Mostra todos os gêneros nos quais você está cadastrado.`
             );
+        }      
+
+        const sugestao = verificarComando(message.body);
+        if (sugestao) {
+            client.sendMessage(message.from, sugestao);
+            return;
         }
-        
 
     } catch (err) {
+        const currentTime = new Date().toLocaleString("pt-BR");
+        client.sendMessage("120363418165585515@g.us", `Erro as ${currentTime}\nVinda de ${message.from} (Consultar no código)\n\n${String(err)}`);
+
         console.error("Erro ao processar mensagem:", err);
         message.reply("deu erro kkkkkkkkkkkkkk perai");
+
     }
 });
-
-// ============================ Inicializa ===========================

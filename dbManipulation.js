@@ -12,13 +12,13 @@ allowedGenres.all( (err, cols) => {
     if (err) return reject(err);
 
     const genres = cols.map(col => col.name.trim());
-    console.log(genres)
+    //console.log(genres)
 });
 
 function createTable(tabela) {
     db.run(`
         CREATE TABLE IF NOT EXISTS ${tabela} (
-            idUsuario TEXT PRIMARY KEY,
+            idUsuario TEXT PRIMARY KEY,ajuda
             Soul TEXT, Funk TEXT, Jazz TEXT, Blues TEXT, RnB TEXT, 
             HipHop TEXT, Rap TEXT, Pop TEXT, Rock TEXT, Punk TEXT,
             Indie TEXT, MPB TEXT, Samba TEXT, BossaNova TEXT, Reggae TEXT,
@@ -40,16 +40,29 @@ function createTable(tabela) {
 
 console.log(allowedGenres)
 
+function addAll(nomeTabela, idUsuario, groupID) {
+    return new Promise((resolve, reject) => {
+        if (err) return reject(err);
+
+        const update = `UPDATE ${nomeTabela} SET * = '1' WHERE idUsuario = ?`
+        db.run(update, '1', (err) => {
+            if (err) return reject(err);
+
+            resolve("Agora você será marcado em todos os gêneros!");
+        })
+    })
+}
+
 function addUsuario(nomeTabela, idUsuario, genero, groupId) {
     return new Promise((resolve, reject) => {
         const allowedGenres =  db.prepare(`select name from pragma_table_info('GenresAndPeople') WHERE name <> 'idUsuario' AND name <> 'grupo'`);
         allowedGenres.all( (err, cols) => {
             if (err) return reject(err);
 
+            const genreLower = genero.toLowerCase().trim();
             const genres = cols.map(col => col.name.trim());
-            console.log(genres)
-        
-            if (!genres.includes(genero)) {
+
+            if (!genres.includes(genreLower)) {
                 const alterQuery = `ALTER TABLE ${nomeTabela} ADD COLUMN ${genero} VARCHAR(20)`;
                 const updateGenreQuery = `UPDATE ${nomeTabela} SET ${genero} = ? WHERE idUsuario = ?`;
                 const updateGroupQuery = `UPDATE ${nomeTabela} SET grupo = ? WHERE idUsuario = ?`;
@@ -94,7 +107,6 @@ function marcarPessoas(nomeTabela, genero, groupID) {
             if (err) return reject(err);
 
             const genres = cols.map(col => col.name.trim());
-            console.log(genres)
 
                 if (!genres.includes(genero)) {
                     return reject(new Error('Inválido.'));
