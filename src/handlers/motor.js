@@ -1,46 +1,35 @@
-import client from '../main.js';
 import  ping  from './ping.js';
-import { createTableGrupos, addGrupo, consultarGrupo } from './database/grupoRepository.js'; 
+// import { createTableGrupos, addGrupo, consultarGrupo } from './database/grupoRepository.js'; 
 import { comandosValidos } from '../utils/comandosValidos.js';
 import { verificarComando } from './verificaComando.js';
 import { help } from './help.js';
 
-
-client.on('ready', async () => {
-    const currentTime = new Date().toLocaleString("pt-BR");
-
-    const chats = await client.getChats();
-    const groups = chats.filter(chat => chat.isGroup);
-
-    console.log("✅ Conectado!");
-
-    await client.sendMessage("120363418368861974@g.us", `Bot conectado em ${currentTime}`);
-});
-
-function motor() {
+export function motor(client) {
 
     client.on('message_create', async (message) => { 
         if (message.fromMe) return; //se a mensagem for do proprio bot ele ignora
-
+        console.log(message.body);
+        
         const mensagem = typeof message.body === 'string' ? message.body.toLowerCase() : ''; // converte a mensagem para minúsculas
         
         try {
-            if (!comandosValidos.includes(mensagem)) return;
-    
+            if (!comandosValidos.includes(mensagem)) return console.log("Comando inválido:", mensagem);
             switch (mensagem) {
-                case mensagem == '!ping':
+                case '!ping':
                     console.log("Ping recebido");
                     ping(message);
                 break;
-    
-                case mensagem == '!ajuda':
+
+                case '!ajuda':
+                case '!help':
                     help(message);
                 break;
+
+                case '!add': 
+
             } 
         } catch (err) {
             return;
         }
     });
 }
-    
-export default motor;

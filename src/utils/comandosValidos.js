@@ -1,7 +1,9 @@
 // Adicionar os comandos criados aqui
 
-const comandosValidos = [
+export const comandosValidos = [
     '!add',
+    '!ping',
+    '!help',
     '!remove',
     '!consultatags',
     '!ConsultaTags',

@@ -3,7 +3,7 @@ const { Client, LocalAuth } = wweb;
 import { criarTabelas } from './services/criarTabelas.js';
 import ping from './handlers/ping.js';
 import { help } from './handlers/help.js';
-import { motor } from './handlers/mainHandler.js';
+import { motor } from './handlers/motor.js';
 
 export const client = new Client({
     authStrategy: new LocalAuth(),
@@ -49,27 +49,16 @@ client.on('auth_failure', msg => {
     console.error('❌ AUTHENTICATION FAILURE', msg);
 });
 
-criarTabelas();
+client.on('ready', async () => {
+    const currentTime = new Date().toLocaleString("pt-BR");
 
-client.on('message_create', async (message) => { 
-    if (message.fromMe) return; //se a mensagem for do proprio bot ele ignora
+    const chats = await client.getChats();
+    const groups = chats.filter(chat => chat.isGroup);
 
-    const mensagem = typeof message.body === 'string' ? message.body.toLowerCase() : ''; // converte a mensagem para minúsculas
+    console.log("✅ Conectado!");
+
+    await client.sendMessage("120363418368861974@g.us", `Bot conectado em ${currentTime}`);
     
-    try {
-        if (!comandosValidos.includes(mensagem)) return;
-
-        switch (mensagem) {
-            case mensagem == '!ping':
-                console.log("Ping recebido");
-                ping(message);
-            break;
-
-            case mensagem == '!ajuda':
-                help(message);
-            break;
-        } 
-    } catch (err) {
-        return;
-    }
+    criarTabelas();
+    motor(client);
 });
