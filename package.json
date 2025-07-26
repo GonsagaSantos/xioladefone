@@ -2,6 +2,7 @@
   "name": "whatsappbot",
   "version": "1.0.0",
   "main": "main.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,10 +11,14 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "puppeteer": "^24.6.1",
+    "pg": "^8.16.3",
+    "puppeteer": "^24.14.0",
     "qrcode-terminal": "^0.12.0",
+    "sequelize": "^6.37.7",
+    "sequelize-cli": "^6.6.3",
+    "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
     "string-similarity": "^4.0.4",
-    "whatsapp-web.js": "^1.27.0"
+    "whatsapp-web.js": "^1.31.0"
   }
 }
