@@ -1,4 +1,4 @@
-function verificarComando(msg) { //pra caso a pessoa erre o comando
+export function verificarComando(msg) { //pra caso a pessoa erre o comando
     const palavra = msg.split(" ")[0]; // pega só o primeiro termo
     const sugestao = similarity.findBestMatch(palavra, comandosValidos);
 
@@ -7,6 +7,4 @@ function verificarComando(msg) { //pra caso a pessoa erre o comando
     }
     return null;
 }
-
-export { verificarComando };
 import similarity from 'string-similarity';

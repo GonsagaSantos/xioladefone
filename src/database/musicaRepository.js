@@ -4,11 +4,11 @@ const db = await dbPromise;
 function createTableMusicas() {
     db.run(`
         CREATE TABLE IF NOT EXISTS Musicas (
-            idMusica TEXT PRIMARY KEY,
+            idMusica INTEGER PRIMARY KEY AUTOINCREMENT,
             nome TEXT,
             artista TEXT,
             URL TEXT,
-            idGenero TEXT REFERENCES Generos(idGenero)
+            idGenero INTEGER REFERENCES Generos(idGenero)
         );`, 
         (err) => {
             if (err) { 

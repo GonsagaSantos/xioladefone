@@ -8,7 +8,7 @@ import { motor } from './handlers/motor.js';
 export const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
-        headless: false,
+        headless: true,
         //executablePath: '/usr/bin/google-chrome',
         args: ['--disable-gpu', '--no-sandbox']
       }

@@ -5,12 +5,11 @@ const db = await dbPromise;
 function createTablePlaylists() {
     db.run(`
         CREATE TABLE IF NOT EXISTS Playlists (
-            idPlaylist TEXT PRIMARY KEY,
+            idPlaylist INTEGER PRIMARY KEY AUTOINCREMENT,
             idGrupo TEXT REFERENCES Grupos(idGrupo),
             nome TEXT
-        );`, 
-        (err) => {
-            if (err) { 
+        );`, (err) => {
+            if (err) {
                 console.error("Erro ao criar tabela:", err.message);
             }
             else {

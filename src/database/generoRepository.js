@@ -5,7 +5,7 @@ const db = await dbPromise;
 function createTableGeneros() {
     db.run(`
         CREATE TABLE IF NOT EXISTS Generos (
-            idGenero TEXT PRIMARY KEY,
+            idGenero INTEGER PRIMARY KEY AUTOINCREMENT,
             nome TEXT
             );`, (err) => {
                 if (err) {
@@ -18,15 +18,14 @@ function createTableGeneros() {
 }
 
 async function addGenero(idGenero, nome) {
-    await new Promise((resolve, reject) => {
+    try {
         const query = `INSERT INTO Generos (idGenero, nome) VALUES (?, ?)`;
-        db.run(query, [idGenero, nome], function(err) {
-            if (err) {
-                return reject(err);
-            }
-            resolve(`Gênero ${nome} adicionado com sucesso!`);
-        });
-    });
+        await db.run(query, [idGenero, nome]);
+        return `Gênero ${nome} adicionado com sucesso!`;
+    } catch (err) {
+        console.error("Erro ao adicionar gênero:", err.message);
+        return `Erro na inserção de valores (Tabela Generos)`;
+    }
 }
 
 async function consultarGenero(idGenero) { // ??

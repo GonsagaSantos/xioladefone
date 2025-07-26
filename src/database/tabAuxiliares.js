@@ -6,8 +6,8 @@ async function createTablePlaylistMusica() {
     return new Promise((resolve, reject) => {
         db.run(`
             CREATE TABLE IF NOT EXISTS PlaylistMusica (
-                idPlaylist TEXT REFERENCES Playlists(idPlaylist),
-                idMusica TEXT REFERENCES Musicas(idMusica)
+                idPlaylist INTEGER REFERENCES Playlists(idPlaylist),
+                idMusica INTEGER REFERENCES Musicas(idMusica)
             );`, (err) => {
                 if (err) {
                     console.error("Erro ao criar tabela:", err.message);
@@ -24,7 +24,7 @@ async function createTableGenerosPessoa() {
         db.run(`
             CREATE TABLE IF NOT EXISTS GenerosPessoa (
                 idUsuario TEXT REFERENCES Usuarios(idUsuario),
-                idGenero TEXT REFERENCES Generos(idGenero)
+                idGenero INTEGER REFERENCES Generos(idGenero)
             );`, (err) => {
                 if (err) {
                     console.error("Erro ao criar tabela:", err.message);
